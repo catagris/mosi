@@ -1,0 +1,12 @@
+node_modules
+.svelte-kit
+build
+.git
+.github
+.env*
+!.env.example
+test-results
+playwright-report
+tests
+coverage
+*.md

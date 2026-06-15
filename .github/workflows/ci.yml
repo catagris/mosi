@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # pnpm version comes from the "packageManager" field in package.json.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Type check
+        run: pnpm check
+      - name: Lint
+        run: pnpm lint
+      - name: Unit tests
+        run: pnpm test
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: mosi
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      # pnpm version comes from the "packageManager" field in package.json.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: E2E tests
+        run: pnpm test:e2e
+        # NOTE: the app under test is configured by playwright.config.ts `webServer.env`,
+        # which hardcodes its own SESSION_SECRET/ORIGIN/NODE_ENV/ENCRYPTION_KEY and wins
+        # for the server process. Only DATABASE_URL here actually matters (it feeds the
+        # config default + the global-setup migration). The rest are redundant but
+        # harmless — left in place so the runner env mirrors a realistic config.
+        env:
+          DATABASE_URL: postgres://app:app@localhost:5432/mosi
+          SESSION_SECRET: ci-secret-0123456789abcdef0123456789abcdef
+          ORIGIN: http://localhost:4173
+          NODE_ENV: test
+          ENCRYPTION_KEY: ci00000000000000000000000000000000000000000000000000000000000001
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t mosi:ci .

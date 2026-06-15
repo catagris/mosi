@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===========================================================================
+   Design tokens. Colors are RGB triplets so Tailwind alpha modifiers work
+   (e.g. bg-primary/10). Neutral tokens flip with the .dark class; brand
+   tokens (--color-primary / --color-accent) can be overridden per event.
+   To self-host a font later, add an @font-face and point --font-sans at it.
+   =========================================================================== */
+:root {
+	--font-sans:
+		ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+		'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+
+	/* Light - slate neutrals */
+	--surface: 248 250 252; /* page background (slate-50) */
+	--card: 255 255 255; /* raised surfaces */
+	--line: 226 232 240; /* hairline borders (slate-200) */
+	--ink: 15 23 42; /* primary text (slate-900) */
+	--muted: 100 116 139; /* secondary text (slate-500) */
+
+	--color-primary: 79 70 229; /* indigo-600 */
+	--primary-fg: 255 255 255;
+	--color-accent: 6 182 212; /* cyan-500 */
+}
+
+.dark {
+	--surface: 2 6 23; /* slate-950 */
+	--card: 15 23 42; /* slate-900 */
+	--line: 30 41 59; /* slate-800 */
+	--ink: 248 250 252; /* slate-50 */
+	--muted: 148 163 184; /* slate-400 */
+
+	--color-primary: 99 102 241; /* indigo-500 - a touch brighter on dark */
+	--primary-fg: 255 255 255;
+	--color-accent: 34 211 238; /* cyan-400 */
+}
+
+@layer base {
+	html {
+		font-family: var(--font-sans);
+		-webkit-text-size-adjust: 100%;
+	}
+	body {
+		@apply bg-surface text-ink antialiased;
+	}
+	/* Refined, slightly tightened display type. */
+	h1,
+	h2,
+	h3 {
+		letter-spacing: -0.018em;
+	}
+	::selection {
+		background: rgb(var(--color-primary) / 0.18);
+	}
+}
+
+@layer components {
+	.btn {
+		@apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-50;
+	}
+	.btn-primary {
+		@apply btn bg-primary text-primary-fg hover:bg-primary/90;
+	}
+	.btn-secondary {
+		@apply btn border border-line bg-card text-ink hover:bg-surface;
+	}
+	.btn-danger {
+		@apply btn bg-red-600 text-white hover:bg-red-700;
+	}
+	.input {
+		@apply w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink shadow-sm transition placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30;
+	}
+	.label {
+		@apply mb-1 block text-sm font-medium text-ink;
+	}
+	.card {
+		@apply rounded-xl border border-line bg-card p-6 shadow-sm dark:shadow-none;
+	}
+	.field-error {
+		@apply mt-1 text-sm text-red-600 dark:text-red-400;
+	}
+	.badge {
+		@apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+	}
+}

@@ -1,0 +1,33 @@
+# Mosi self-host stack: app + Postgres.
+# The reverse proxy (TLS) is host-managed and intentionally NOT included -
+# the app is published on 127.0.0.1 only. See README "Reverse proxy".
+services:
+  app:
+    build: .
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000" # host proxy fronts it
+    # Healthcheck is defined in the Dockerfile (HEALTHCHECK) so it applies to every
+    # runtime, not just compose. Compose inherits it automatically.
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: mosi
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d mosi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:

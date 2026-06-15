@@ -1,0 +1,14 @@
+node_modules/
+build/
+.svelte-kit/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+/test-results/
+/playwright-report/
+/coverage/
+vite.config.ts.timestamp-*
+docker-compose.override.yml
+tests/e2e/.state.json

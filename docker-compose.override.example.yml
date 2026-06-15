@@ -1,0 +1,14 @@
+# Local development override - publishes the Postgres port on the host so
+# `pnpm dev` (running outside Docker) can reach the database.
+#
+# Usage:
+#   cp docker-compose.override.example.yml docker-compose.override.yml
+#   docker compose up -d db
+#
+# docker-compose.override.yml is merged automatically by Docker Compose.
+# Do NOT use this in production: the base compose file deliberately keeps
+# Postgres unreachable from outside the compose network.
+services:
+  db:
+    ports:
+      - "127.0.0.1:5432:5432"

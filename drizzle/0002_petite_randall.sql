@@ -1,0 +1,1 @@
+CREATE INDEX "rsvps_guest_email_lower_idx" ON "rsvps" USING btree (lower("guest_email"));
