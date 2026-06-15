@@ -18,20 +18,24 @@ test('guest submits an RSVP through the wizard (custom fields + dish)', async ({
 	await page.getByLabel(/Your name/).fill('Gina Guest');
 	await page.getByRole('button', { name: /Next/ }).click();
 
-	// Step 3 - dishes.
+	// Step 3 - allergies (events collect these by default). Optional, so advance.
+	await expect(page.getByRole('heading', { name: /Allergies/ })).toBeVisible();
+	await page.getByRole('button', { name: /Next/ }).click();
+
+	// Step 4 - dishes.
 	await expect(page.locator('input[name="dish_item_0"]')).toBeVisible();
 	await page.locator('input[name="dish_item_0"]').fill('Pavlova');
 	await page.locator('select[name="dish_category_0"]').selectOption({ label: 'Desserts' });
 	await page.locator('input[name="dish_serves_0"]').fill('8');
 	await page.getByRole('button', { name: /Next/ }).click();
 
-	// Step 4 - custom field details.
+	// Step 5 - custom field details.
 	await expect(page.getByRole('spinbutton', { name: /Parking spots needed/ })).toBeVisible();
 	await page.getByRole('spinbutton', { name: /Parking spots needed/ }).fill('2');
 	await page.getByRole('combobox', { name: 'T-shirt size' }).selectOption('M');
 	await page.getByRole('button', { name: /Next/ }).click();
 
-	// Step 5 - review + send (bot timer enforces a minimum render-to-submit gap).
+	// Step 6 - review + send (bot timer enforces a minimum render-to-submit gap).
 	await expect(page.getByRole('button', { name: /Send my RSVP/ })).toBeVisible();
 	await page.waitForTimeout(SUBMIT_WAIT_MS);
 	await page.getByRole('button', { name: /Send my RSVP/ }).click();

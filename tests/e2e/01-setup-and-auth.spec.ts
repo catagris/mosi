@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { OWNER_PASSWORD, OWNER_USERNAME, readState, totpCode, writeState } from './helpers';
+import {
+	OWNER_PASSWORD,
+	OWNER_USERNAME,
+	readState,
+	totpCode,
+	verifyWithTotp,
+	writeState
+} from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -57,8 +64,7 @@ test('two-step login with password + TOTP', async ({ page }) => {
 	await page.goto('/admin/notifications');
 	await expect(page).toHaveURL(/\/admin\/login\/2fa$/);
 
-	await page.getByLabel('Authentication code').fill(totpCode(readState().totpSecret!));
-	await page.getByRole('button', { name: 'Verify' }).click();
+	await verifyWithTotp(page, readState().totpSecret!);
 	await expect(page).toHaveURL(/\/admin$/);
 
 	await page.getByRole('button', { name: 'Sign out' }).click();
@@ -90,8 +96,7 @@ test('login with a single-use recovery code', async ({ page }) => {
 	await expect(page.getByRole('alert')).toContainText('Invalid code');
 
 	// Finish the login properly so the session ends in a clean state.
-	await page.getByLabel('Authentication code').fill(totpCode(readState().totpSecret!));
-	await page.getByRole('button', { name: 'Verify' }).click();
+	await verifyWithTotp(page, readState().totpSecret!);
 	await expect(page).toHaveURL(/\/admin(\?.*)?$/);
 });
 

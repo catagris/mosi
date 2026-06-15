@@ -21,7 +21,9 @@ export default defineConfig({
 	fullyParallel: false,
 	workers: 1,
 	retries: process.env.CI ? 1 : 0,
-	timeout: 60_000,
+	// Generous: the TOTP replay guard makes a same-window re-login wait ~30s for the
+	// next code (see verifyWithTotp), so a login-bearing test can legitimately run long.
+	timeout: 90_000,
 	reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
 	use: {
 		baseURL: `http://localhost:${PORT}`,
@@ -42,6 +44,10 @@ export default defineConfig({
 			VAPID_SUBJECT: 'mailto:e2e@example.com',
 			// The suite logs in many times in quick succession.
 			RATE_LIMIT_LOGIN: '300/min',
+			// The push-subscribe spec uses a loopback (https://localhost:9) fake
+			// endpoint; allow private targets so it clears the SSRF guard. Actual
+			// SSRF blocking is covered by tests/unit/ssrf.test.ts.
+			ALLOW_PRIVATE_WEBHOOKS: 'true',
 			// Pin the auth policy so a developer's local .env (which may enable the
 			// env-admin/optional-2FA shortcuts) can't change the tested flow. These
 			// keys are set here so dotenv won't override them from .env.

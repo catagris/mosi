@@ -75,7 +75,31 @@ export async function loginAsOwner(page: Page): Promise<void> {
 	await expect(page).toHaveURL(/\/admin\/login\/2fa$/);
 	const secret = readState().totpSecret;
 	if (!secret) throw new Error('No TOTP secret in E2E state - run 01-setup first');
-	await page.getByLabel('Authentication code').fill(totpCode(secret));
-	await page.getByRole('button', { name: 'Verify' }).click();
-	await expect(page).toHaveURL(/\/admin(\?.*)?$/);
+	await verifyWithTotp(page, secret);
+}
+
+/** ms until the next 30s TOTP step starts (+buffer), so a retry uses a fresh code. */
+function msToNextTotpStep(periodSec = 30): number {
+	const periodMs = periodSec * 1000;
+	return periodMs - (Date.now() % periodMs) + 750;
+}
+
+/**
+ * Submit a TOTP code on the 2FA *verify* step, resilient to the server's replay
+ * guard: an accepted step can't be reused for ~30s, so when the suite logs in
+ * twice inside one window the second code is rejected. We then wait for the next
+ * step and retry - exactly what a real user does. Leaves the page on /admin.
+ */
+export async function verifyWithTotp(page: Page, secret: string): Promise<void> {
+	for (let attempt = 0; attempt < 3; attempt++) {
+		await page.getByLabel('Authentication code').fill(totpCode(secret));
+		await page.getByRole('button', { name: 'Verify' }).click();
+		const accepted = await page
+			.waitForURL(/\/admin(\?.*)?$/, { timeout: 4_000 })
+			.then(() => true)
+			.catch(() => false);
+		if (accepted) return;
+		await page.waitForTimeout(msToNextTotpStep());
+	}
+	throw new Error('TOTP verify kept being rejected (replay window) after retries');
 }
