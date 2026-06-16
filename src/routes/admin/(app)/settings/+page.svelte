@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { confirmSubmit } from '$lib/utils/confirmSubmit';
+	import { enhanceKeepValues } from '$lib/utils/forms';
 	import TimezoneSelect from '$lib/components/admin-events/TimezoneSelect.svelte';
 	import WebhookForm from '$lib/components/admin-events/WebhookForm.svelte';
 	import type { PageProps } from './$types';
@@ -41,7 +42,7 @@
 
 	<section class="card space-y-4">
 		<h2 class="text-lg font-semibold text-ink">Organization</h2>
-		<form method="POST" action="?/save" use:enhance class="space-y-4">
+		<form method="POST" action="?/save" use:enhance={enhanceKeepValues} class="space-y-4">
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div>
 					<label class="label" for="org-name"

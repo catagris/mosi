@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import TimezoneSelect from '$lib/components/admin-events/TimezoneSelect.svelte';
 	import { utcToZonedLocal } from '$lib/utils/datetime';
+	import { enhanceKeepValues } from '$lib/utils/forms';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -45,7 +46,7 @@
 		</div>
 	{/if}
 
-	<form method="POST" action="?/update" use:enhance class="space-y-6">
+	<form method="POST" action="?/update" use:enhance={enhanceKeepValues} class="space-y-6">
 		<section class="card space-y-4">
 			<h2 class="text-lg font-semibold text-ink">Basics</h2>
 			<div class="grid gap-4 sm:grid-cols-2">
