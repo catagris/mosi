@@ -43,6 +43,24 @@ export async function deleteDishCategory(id: string, eventId: string): Promise<v
 		.where(and(eq(dishCategories.id, id), eq(dishCategories.eventId, eventId)));
 }
 
+/**
+ * Persist a drag/move reorder: category ids in their new display order. The
+ * `eventId` guard means foreign ids are silently ignored (can't reorder another
+ * event's categories). The guest dish step + admin board already sort by
+ * `sortOrder`, so this is the single source of truth for ordering.
+ */
+export async function reorderDishCategories(eventId: string, orderedIds: string[]): Promise<void> {
+	const db = getDb();
+	await db.transaction(async (tx) => {
+		for (let i = 0; i < orderedIds.length; i++) {
+			await tx
+				.update(dishCategories)
+				.set({ sortOrder: i })
+				.where(and(eq(dishCategories.id, orderedIds[i]), eq(dishCategories.eventId, eventId)));
+		}
+	});
+}
+
 // ---------------------------------------------------------------------------
 // Dish board (public + admin views)
 // ---------------------------------------------------------------------------

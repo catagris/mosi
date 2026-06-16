@@ -8,6 +8,7 @@ import {
 	deleteDishCategory,
 	deleteDishContribution,
 	getDishInEvent,
+	reorderDishCategories,
 	setDishVisibility,
 	updateDishCategory
 } from '$lib/server/services/dishes';
@@ -136,6 +137,36 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const id = String(form.get('id') ?? '');
 		await deleteDishCategory(id, event.id);
+		return { dishSaved: true };
+	},
+
+	// Drag-to-reorder: the client posts the full id order (comma-separated).
+	reorderCategories: async ({ request, locals, params }) => {
+		requireUser(locals);
+		const event = await loadEvent(params.id);
+		const form = await request.formData();
+		const orderedIds = String(form.get('order') ?? '')
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean);
+		if (orderedIds.length > 0) await reorderDishCategories(event.id, orderedIds);
+		return { dishSaved: true };
+	},
+
+	// Up/down buttons (touch + keyboard fallback for the drag handle).
+	moveCategory: async ({ request, locals, params }) => {
+		requireUser(locals);
+		const event = await loadEvent(params.id);
+		const form = await request.formData();
+		const id = String(form.get('id') ?? '');
+		const direction = String(form.get('direction') ?? '');
+		const orderedIds = (await listDishCategories(event.id)).map((c) => c.id);
+		const index = orderedIds.indexOf(id);
+		if (index === -1) return fail(404, { dish: null });
+		const target = direction === 'up' ? index - 1 : index + 1;
+		if (target < 0 || target >= orderedIds.length) return { dishSaved: true };
+		[orderedIds[index], orderedIds[target]] = [orderedIds[target], orderedIds[index]];
+		await reorderDishCategories(event.id, orderedIds);
 		return { dishSaved: true };
 	},
 

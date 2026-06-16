@@ -7,6 +7,46 @@
 	const categoryForm = $derived(form?.category ?? null);
 	const dishForm = $derived(form?.dish ?? null);
 	const hiddenCount = $derived(data.contributions.filter((d) => !d.visible).length);
+
+	// ── Category reorder: drag on desktop, up/down buttons on touch/keyboard ──
+	type Category = (typeof data.categories)[number];
+
+	let order = $state<string[]>([]);
+	let dragIndex = $state<number | null>(null);
+	let overIndex = $state<number | null>(null);
+	let reorderForm = $state<HTMLFormElement>();
+	let orderInput = $state<HTMLInputElement>();
+
+	// Mirror the server's order; re-syncs after every add / delete / reorder.
+	$effect(() => {
+		order = data.categories.map((c) => c.id);
+	});
+
+	const orderedCategories = $derived<Category[]>(
+		order.length === data.categories.length
+			? order
+					.map((id) => data.categories.find((c) => c.id === id))
+					.filter((c): c is Category => c !== undefined)
+			: data.categories
+	);
+
+	function persistOrder(ids: string[]): void {
+		if (!reorderForm || !orderInput) return;
+		orderInput.value = ids.join(',');
+		reorderForm.requestSubmit();
+	}
+
+	function dropOnto(toIndex: number): void {
+		const from = dragIndex;
+		dragIndex = null;
+		overIndex = null;
+		if (from === null || from === toIndex) return;
+		const ids = orderedCategories.map((c) => c.id);
+		const [moved] = ids.splice(from, 1);
+		ids.splice(toIndex, 0, moved);
+		order = ids; // optimistic; the action + load reload confirm it
+		persistOrder(ids);
+	}
 </script>
 
 <svelte:head>
@@ -65,26 +105,98 @@
 			</form>
 		</div>
 
+		<form
+			method="POST"
+			action="?/reorderCategories"
+			use:enhance
+			bind:this={reorderForm}
+			class="hidden"
+			aria-hidden="true"
+		>
+			<input type="hidden" name="order" bind:this={orderInput} />
+		</form>
+
 		{#if data.categories.length === 0}
 			<p class="card text-sm text-muted">
 				No categories yet - guests can still bring uncategorized dishes.
 			</p>
 		{:else}
 			<div class="space-y-3">
-				{#each data.categories as category (category.id)}
-					<div class="card space-y-3 p-4">
+				{#each orderedCategories as category, index (category.id)}
+					<div
+						class="card space-y-3 p-4 transition {overIndex === index
+							? 'ring-2 ring-primary'
+							: ''} {dragIndex === index ? 'opacity-50' : ''}"
+						role="listitem"
+						ondragover={(e) => {
+							e.preventDefault();
+							overIndex = index;
+						}}
+						ondragleave={() => {
+							if (overIndex === index) overIndex = null;
+						}}
+						ondrop={(e) => {
+							e.preventDefault();
+							dropOnto(index);
+						}}
+					>
 						<div class="flex flex-wrap items-center justify-between gap-3">
-							<div>
-								<span class="font-medium text-ink">{category.name}</span>
-								{#if category.description}
-									<p class="text-sm text-muted">{category.description}</p>
-								{/if}
+							<div class="flex items-center gap-2">
+								<span
+									class="cursor-grab touch-none select-none text-muted hover:text-ink"
+									draggable="true"
+									ondragstart={() => (dragIndex = index)}
+									ondragend={() => {
+										dragIndex = null;
+										overIndex = null;
+									}}
+									title="Drag to reorder"
+									aria-hidden="true"
+								>
+									<svg viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
+										<circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" />
+										<circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" />
+										<circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" />
+									</svg>
+								</span>
+								<div>
+									<span class="font-medium text-ink">{category.name}</span>
+									{#if category.description}
+										<p class="text-sm text-muted">{category.description}</p>
+									{/if}
+								</div>
 							</div>
-							<span class="badge bg-line text-muted">
-								{data.claimedByCategory[category.id] ?? 0} claimed{category.targetCount !== null
-									? ` / ${category.targetCount} wanted`
-									: ''}
-							</span>
+							<div class="flex items-center gap-2">
+								<form method="POST" action="?/moveCategory" use:enhance>
+									<input type="hidden" name="id" value={category.id} />
+									<input type="hidden" name="direction" value="up" />
+									<button
+										type="submit"
+										class="rounded-md border border-line px-2 py-1 text-sm text-muted hover:text-ink disabled:opacity-40"
+										disabled={index === 0}
+										aria-label="Move {category.name} up"
+									>
+										↑
+									</button>
+								</form>
+								<form method="POST" action="?/moveCategory" use:enhance>
+									<input type="hidden" name="id" value={category.id} />
+									<input type="hidden" name="direction" value="down" />
+									<button
+										type="submit"
+										class="rounded-md border border-line px-2 py-1 text-sm text-muted hover:text-ink disabled:opacity-40"
+										disabled={index === orderedCategories.length - 1}
+										aria-label="Move {category.name} down"
+									>
+										↓
+									</button>
+								</form>
+								<span class="badge bg-line text-muted">
+									{data.claimedByCategory[category.id] ?? 0} claimed{category.targetCount !== null
+										? ` / ${category.targetCount} wanted`
+										: ''}
+								</span>
+							</div>
 						</div>
 
 						<details open={categoryForm?.id === category.id}>
