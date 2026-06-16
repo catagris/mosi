@@ -1,6 +1,6 @@
 {
 	"name": "mosi",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"private": true,
 	"description": "Self-hostable party & event invitation system: SvelteKit + Tailwind + PostgreSQL, installable PWA with Web Push.",
 	"license": "AGPL-3.0-or-later",
