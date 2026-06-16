@@ -68,7 +68,8 @@ export const actions: Actions = {
 			void sendEditLinkEmail({
 				to: rsvp.guestEmail,
 				guestName: rsvp.guestName,
-				eventTitle: event.title,
+				event,
+				eventUrl: `${url.origin}/e/${event.slug}${event.publicToken ? `?t=${encodeURIComponent(event.publicToken)}` : ''}`,
 				editUrl: `${url.origin}/e/${event.slug}/edit/${rsvp.editToken}`
 			}).catch((err) => console.error('resend: edit-link send failed:', (err as Error).message));
 		}

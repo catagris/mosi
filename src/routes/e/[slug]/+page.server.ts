@@ -156,7 +156,8 @@ export const actions: Actions = {
 			await sendEditLinkEmail({
 				to: parsed.data.guestEmail,
 				guestName: parsed.data.guestName,
-				eventTitle: event.title,
+				event,
+				eventUrl: `${url.origin}/e/${event.slug}${event.publicToken ? `?t=${encodeURIComponent(event.publicToken)}` : ''}`,
 				editUrl: `${url.origin}/e/${params.slug}/edit/${result.rsvp.editToken}`
 			});
 		}

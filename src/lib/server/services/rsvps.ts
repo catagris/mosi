@@ -492,7 +492,8 @@ export async function promoteFromWaitlist(event: Event): Promise<Rsvp[]> {
 			await sendWaitlistPromotedEmail({
 				to: rsvp.guestEmail,
 				guestName: rsvp.guestName,
-				eventTitle: event.title,
+				event,
+				eventUrl: `${env.origin}/e/${event.slug}${event.publicToken ? `?t=${encodeURIComponent(event.publicToken)}` : ''}`,
 				editUrl: `${env.origin}/e/${event.slug}/edit/${rsvp.editToken}`
 			});
 		}

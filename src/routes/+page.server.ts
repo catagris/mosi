@@ -4,7 +4,6 @@ import { getSettings } from '$lib/server/services/settings';
 import { emailEnabled, sendMyLinksEmail } from '$lib/server/email';
 import { findActiveRsvpsByEmailAcrossEvents } from '$lib/server/services/rsvps';
 import { consume, RULES } from '$lib/server/rate-limit';
-import { formatEventTime } from '$lib/utils/datetime';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -51,8 +50,8 @@ export const actions: Actions = {
 				await sendMyLinksEmail({
 					to: parsed.data.email,
 					items: matches.map(({ event, rsvp }) => ({
-						title: event.title,
-						whenLabel: formatEventTime(event.startsAt, event.timezone),
+						event,
+						eventUrl: `${url.origin}/e/${event.slug}${event.publicToken ? `?t=${encodeURIComponent(event.publicToken)}` : ''}`,
 						editUrl: `${url.origin}/e/${event.slug}/edit/${rsvp.editToken}`
 					}))
 				});
